@@ -94,7 +94,12 @@ server.patch("/products/:id", bodyParser, (req, res, next) => {
 
   next();
 });
+// Rediriger la racine vers /products (évite le 404 sur "/")
+server.get("/", (req, res) => {
+  res.redirect("/products");
+});
 
+// Use default router (json-server routes)
 server.use(router);
 
 const PORT = process.env.PORT || 3004;
