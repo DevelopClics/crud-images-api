@@ -1,11 +1,19 @@
 const jsonServer = require("json-server");
 const multer = require("multer");
+const cors = require("cors");
 
 const server = jsonServer.create();
 const router = jsonServer.router("db.json");
-const middlewares = jsonServer.defaults();
 
-const PORT = process.env.PORT || 3004;
+// Active CORS avant les autres middlewares
+server.use(cors());
+
+// Middlewares par défaut (logger, static, no-cache, etc)
+const middlewares = jsonServer.defaults({
+  // active CORS
+  static: "public",
+  noCors: false,
+});
 
 server.use(middlewares);
 
@@ -89,6 +97,7 @@ server.patch("/products/:id", bodyParser, (req, res, next) => {
 
 server.use(router);
 
+const PORT = process.env.PORT || 3004;
 server.listen(PORT, () => {
   console.log(`JSON Server is running on port ${PORT}`);
 });
