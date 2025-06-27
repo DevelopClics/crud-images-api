@@ -1,0 +1,18 @@
+{
+  "name": "crud-images-api",
+  "version": "1.0.0",
+  "description": "API json-server avec multer pour upload d'images",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "json-server": "^0.17.4",
+    "multer": "^2.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "author": "",
+  "license": "MIT"
+}
