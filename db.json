@@ -8,64 +8,14 @@
   ],
   "products": [
     {
-      "name": "Floriane PEVERELLI",
-      "brand": "La pomme d'Happy",
-      "category": "Phones",
-      "price": "1.02",
-      "description": "Pom Pom Pom Pom",
-      "imageFilename": "1750318890043_1750316689880_2025-06-28-soireIÌÂe-jeux-video-web.jpg",
-      "createdAt": "2025-06-19T07:41:30.046Z",
-      "id": 2
-    },
-    {
-      "name": "Brunch G",
-      "brand": "DEDC",
-      "category": "Accessories",
-      "price": "50",
-      "description": "Ca va bruncher Ho hé Ho hé",
-      "imageFilename": "1750659042237_2025-05-25-brunch-72.jpg",
-      "createdAt": "2025-06-23T06:10:42.247Z",
-      "id": 3
-    },
-    {
-      "name": "Le toutan12",
-      "brand": "DEDC",
+      "name": "Mac mini",
+      "brand": "Apple",
       "category": "Computers",
-      "price": "60",
-      "description": "Ce Imac est un ordinateur tou en un",
-      "imageFilename": "1750938692068_2025-05-to-2025-10-marcheÌ-des-producteurs-72.jpg",
-      "createdAt": "2025-06-26T11:51:32.072Z",
-      "id": 4
-    },
-    {
-      "name": "fff",
-      "brand": "La pomme",
-      "category": "Computers",
-      "price": "5",
-      "description": "okay okay okayokay",
-      "imageFilename": "1750944541756_1750938692068_2025-05-to-2025-10-marcheIÌÂ-des-producteurs-72.jpg",
-      "createdAt": "2025-06-26T13:29:01.760Z",
-      "id": 5
-    },
-    {
-      "name": "TEST",
-      "brand": "TEST",
-      "category": "Computers",
-      "price": 5,
-      "description": "TEST TESTTEST TESTTEST TESTTEST TEST",
-      "imageFilename": "1750945074100_1750254192854_2025-03-08-La-boum.png",
-      "createdAt": "2025-06-26T13:37:54.102Z",
-      "id": 6
-    },
-    {
-      "name": "TESTONS",
-      "brand": "TEST",
-      "category": "Phones",
-      "price": "5",
-      "description": "TESTTESTTESTTESTTESTTEST",
-      "imageFilename": "1750945356842_1750252785093_2025-06-21-lez-go-web.jpg",
-      "createdAt": "2025-06-26T13:42:36.845Z",
-      "id": 7
+      "price": 599,
+      "description": "Petit mais puissant cette machine vous permettra de travailler comme un PRO",
+      "createdAt": "2025-06-27T08:30:07.613Z",
+      "imageFilename": "1751013007608_1750318890043_1750316689880_2025-06-28-soireIIÌÂAÌÂe-jeux-video-web.jpg",
+      "id": 1
     }
   ]
 }
