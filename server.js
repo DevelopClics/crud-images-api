@@ -7,7 +7,7 @@ const router = jsonServer.router("db.json");
 
 const allowedOrigins = [
   "https://developclics.github.io",
-  "http://localhost:5174",
+  "http://localhost:5173",
 ];
 
 // Middleware CORS configuré avant tout
