@@ -5,15 +5,6 @@ const cors = require("cors");
 const server = jsonServer.create();
 const router = jsonServer.router("db.json");
 
-<<<<<<< Updated upstream
-// Middleware JSON Server avec options CORS (remplace cors() séparé)
-const middlewares = jsonServer.defaults({
-  static: "public",
-  cors: {
-    origin: "https://developclics.github.io", // autorise ton front GitHub Pages
-    credentials: true,
-  },
-=======
 // Middleware CORS configuré avant tout
 server.use(
   cors({
@@ -26,7 +17,6 @@ server.use(
 const middlewares = jsonServer.defaults({
   static: "public",
   noCors: true, // désactive le CORS interne de json-server pour éviter conflit
->>>>>>> Stashed changes
 });
 
 server.use(middlewares);
