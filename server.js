@@ -5,8 +5,16 @@ const cors = require("cors");
 const server = jsonServer.create();
 const router = jsonServer.router("db.json");
 
+// CORS autorisé uniquement pour GitHub Pages
+server.use(
+  cors({
+    origin: "https://developclics.github.io",
+    credentials: true,
+  })
+);
+
 // Active CORS avant les autres middlewares
-server.use(cors());
+// server.use(cors());
 
 // Middlewares par défaut (logger, static, no-cache, etc)
 const middlewares = jsonServer.defaults({
