@@ -1,30 +1,21 @@
 const jsonServer = require("json-server");
 const multer = require("multer");
-const cors = require("cors");
 
 const server = jsonServer.create();
 const router = jsonServer.router("db.json");
 
-// Active CORS avant les autres middlewares
-// server.use(cors());
-
-// Middlewares par défaut (logger, static, no-cache, etc)
+// Middleware JSON Server avec options CORS (remplace cors() séparé)
 const middlewares = jsonServer.defaults({
-  // active CORS
   static: "public",
-  noCors: true,
-});
-
-// CORS autorisé uniquement pour GitHub Pages
-server.use(
-  cors({
-    origin: "https://developclics.github.io",
+  cors: {
+    origin: "https://developclics.github.io", // autorise ton front GitHub Pages
     credentials: true,
-  })
-);
+  },
+});
 
 server.use(middlewares);
 
+// Multer setup pour upload d'images
 const storage = multer.diskStorage({
   destination(req, file, cb) {
     cb(null, "public/images");
@@ -38,6 +29,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 const bodyParser = upload.fields([{ name: "image", maxCount: 1 }]);
 
+// Validation produit (identique)
 function validateProduct(body) {
   let errors = {};
   if (!body.name || body.name.length < 2)
@@ -53,7 +45,7 @@ function validateProduct(body) {
   return errors;
 }
 
-// POST /products (création)
+// POST /products
 server.post("/products", bodyParser, (req, res, next) => {
   if (!req.body) {
     return res
@@ -78,7 +70,7 @@ server.post("/products", bodyParser, (req, res, next) => {
   next();
 });
 
-// PATCH /products/:id (modification)
+// PATCH /products/:id
 server.patch("/products/:id", bodyParser, (req, res, next) => {
   if (!req.body) {
     return res
@@ -103,7 +95,7 @@ server.patch("/products/:id", bodyParser, (req, res, next) => {
   next();
 });
 
-// Use default router (json-server routes)
+// Utilise le routeur JSON Server
 server.use(router);
 
 const PORT = process.env.PORT || 3004;
