@@ -5,18 +5,31 @@ const cors = require("cors");
 const server = jsonServer.create();
 const router = jsonServer.router("db.json");
 
+const allowedOrigins = [
+  "https://developclics.github.io",
+  "http://localhost:5174",
+];
+
 // Middleware CORS configuré avant tout
 server.use(
   cors({
-    origin: "https://developclics.github.io",
+    origin: function (origin, callback) {
+      // Autoriser les requêtes sans origine (ex: Postman)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg = "L'origine CORS n'est pas autorisée.";
+        return callback(new Error(msg), false);
+      }
+      return callback(null, true);
+    },
     credentials: true,
   })
 );
 
-// Désactive CORS intégré de json-server
+// Désactive CORS intégré de json-server pour éviter conflit
 const middlewares = jsonServer.defaults({
   static: "public",
-  noCors: true, // désactive le CORS interne de json-server pour éviter conflit
+  noCors: true,
 });
 
 server.use(middlewares);
@@ -35,7 +48,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 const bodyParser = upload.fields([{ name: "image", maxCount: 1 }]);
 
-// Validation produit (identique)
+// Validation produit
 function validateProduct(body) {
   let errors = {};
   if (!body.name || body.name.length < 2)
