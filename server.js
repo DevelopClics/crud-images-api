@@ -2,6 +2,8 @@ const jsonServer = require("json-server");
 const multer = require("multer");
 const cors = require("cors");
 
+const path = require("path");
+
 const server = jsonServer.create();
 const router = jsonServer.router("db.json");
 
@@ -29,6 +31,11 @@ const middlewares = jsonServer.defaults({
 });
 
 server.use(middlewares);
+
+// *** AJOUTE ICI ton GET "/" ***
+server.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
 
 // ✅ Multer
 const storage = multer.diskStorage({
