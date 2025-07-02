@@ -1,7 +1,7 @@
 const jsonServer = require("json-server");
 const multer = require("multer");
 const cors = require("cors");
-
+const fs = require("fs");
 const path = require("path");
 
 const server = jsonServer.create();
@@ -12,32 +12,73 @@ const allowedOrigins = [
   "http://localhost:5173",
 ];
 
-// ✅ Middleware CORS (juste 1 seul bloc, pas doublé)
+// Middleware global pour logger toutes les requêtes et leurs headers
+server.use((req, res, next) => {
+  console.log(`Requête reçue : ${req.method} ${req.url}`);
+  console.log("Headers:", req.headers);
+
+  console.log(`Requête ${req.method} ${req.url} - Headers:`, req.headers);
+  next();
+});
+
+// Variable en mémoire pour stocker l'utilisateur connecté (session simple)
+let currentUser = null;
+
+// Utilitaires lecture/écriture db.json
+const readDb = () => JSON.parse(fs.readFileSync("db.json", "utf-8"));
+const writeDb = (data) =>
+  fs.writeFileSync("db.json", JSON.stringify(data, null, 2));
+
+// Middleware Body Parser (json-server)
+server.use(jsonServer.bodyParser);
+
+// Middleware CORS
 server.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // permet Postman, etc.
+      if (!origin) return callback(null, true); // pour Postman, etc.
       if (allowedOrigins.includes(origin)) return callback(null, true);
       return callback(new Error("CORS origin not allowed"), false);
     },
     credentials: true,
+    allowedHeaders: ["Content-Type", "X-User-Id"], // <-- Ajouté pour autoriser ce header custom
   })
 );
+server.options("*", cors());
 
-// ✅ Middleware json-server (avec CORS désactivé côté json-server)
+// LOGIN
+server.post("/login", (req, res) => {
+  const { id, password } = req.body;
+  const db = readDb();
+  const user = db.user.find((u) => u.id === id && u.password === password);
+
+  if (user) {
+    currentUser = { id: user.id, name: user.name };
+    res.json({ message: "Connecté", user: currentUser });
+  } else {
+    res.status(401).json({ message: "Identifiants invalides" });
+  }
+});
+
+// LOGOUT
+server.post("/logout", (req, res) => {
+  currentUser = null;
+  res.json({ message: "Déconnecté" });
+});
+
+// Middleware json-server avec options (static: public, noCors: true car CORS géré avant)
 const middlewares = jsonServer.defaults({
   static: "public",
   noCors: true,
 });
-
 server.use(middlewares);
 
-// *** AJOUTE ICI ton GET "/" ***
+// Route racine pour servir index.html
 server.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// ✅ Multer
+// Multer config pour upload images
 const storage = multer.diskStorage({
   destination(req, file, cb) {
     cb(null, "public/images");
@@ -47,11 +88,10 @@ const storage = multer.diskStorage({
     cb(null, imageFilename);
   },
 });
-
 const upload = multer({ storage });
 const bodyParser = upload.fields([{ name: "image", maxCount: 1 }]);
 
-// ✅ Validation produit
+// Validation produit
 function validateProduct(body) {
   const errors = {};
   if (!body.name || body.name.length < 2)
@@ -67,44 +107,89 @@ function validateProduct(body) {
   return errors;
 }
 
-// ✅ POST
-server.post("/products", bodyParser, (req, res, next) => {
-  if (!req.body) return res.status(400).json({ error: "Requête vide" });
+// Middleware pour routes admin : check si admin connecté
+const checkAdmin = (req, res, next) => {
+  const userId = req.get("X-User-Id")?.trim();
+  console.log("checkAdmin - userId header:", userId);
 
+  if (userId !== "admin") {
+    return res.status(403).json({ message: "Accès refusé - admin uniquement" });
+  }
+  console.log("Accès autorisé - admin confirmé");
+  next();
+};
+// Middleware création produit admin
+server.post("/admin/products", checkAdmin, bodyParser, (req, res, next) => {
   req.body.createdAt = new Date().toISOString();
+
   if (req.files?.image?.[0]) {
     req.body.imageFilename = req.files.image[0].filename;
   }
 
   req.body.price = Number(req.body.price);
-  const errors = validateProduct(req.body);
-  if (Object.keys(errors).length > 0) return res.status(400).jsonp(errors);
-
-  next();
-});
-
-// ✅ PATCH
-server.patch("/products/:id", bodyParser, (req, res, next) => {
-  if (!req.body) return res.status(400).json({ error: "Requête vide" });
-
-  if (req.files?.image?.[0]) {
-    req.body.imageFilename = req.files.image[0].filename;
-  }
-
-  if (req.body.price) {
-    req.body.price = Number(req.body.price);
-  }
 
   const errors = validateProduct(req.body);
   if (Object.keys(errors).length > 0) return res.status(400).jsonp(errors);
 
+  // Redirige vers la route json-server standard /products (POST)
+  req.url = "/products";
   next();
 });
 
-// ✅ Routeur json-server
+// Middleware modification produit admin
+server.patch(
+  "/admin/products/:id",
+  checkAdmin,
+  bodyParser,
+  (req, res, next) => {
+    if (req.files?.image?.[0]) {
+      req.body.imageFilename = req.files.image[0].filename;
+    }
+
+    if (req.body.price) {
+      req.body.price = Number(req.body.price);
+    }
+
+    const errors = validateProduct(req.body);
+    if (Object.keys(errors).length > 0) return res.status(400).jsonp(errors);
+
+    req.url = `/products/${req.params.id}`;
+    next();
+  }
+);
+
+// Middleware suppression produit admin
+// server.delete("/admin/products/:id", checkAdmin, (req, res, next) => {
+//   req.url = `/products/${req.params.id}`;
+//   next();
+// });
+
+server.delete("/admin/products/:id", checkAdmin, (req, res) => {
+  const id = Number(req.params.id);
+  const db = router.db; // accès low-level à la db json-server
+
+  const product = db.get("products").find({ id }).value();
+
+  if (!product) {
+    return res.status(404).json({ message: "Produit non trouvé" });
+  }
+
+  db.get("products").remove({ id }).write();
+
+  res.json({ message: "Produit supprimé" });
+});
+
+server.delete("/products/:id", (req, res) => {
+  res.status(403).json({
+    message:
+      "Suppression interdite. Utilisez la route admin avec authentification.",
+  });
+});
+
+// Utilise le routeur json-server (dernière chose)
 server.use(router);
 
-// ✅ Port Render
+// Démarre le serveur
 const PORT = process.env.PORT || 3004;
 server.listen(PORT, () => {
   console.log(`JSON Server is running on port ${PORT}`);

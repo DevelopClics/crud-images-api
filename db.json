@@ -8,14 +8,24 @@
   ],
   "products": [
     {
-      "name": "Mac mini",
+      "name": "La violette",
+      "brand": "DEDC",
+      "category": "Guinguette Mobile",
+      "price": 1,
+      "description": "La Guinguette mobile et ludique etc.",
+      "createdAt": "2025-07-02T11:38:40.354Z",
+      "imageFilename": "1751456320345_logo-guinguette-mobile.png",
+      "id": 2
+    },
+    {
+      "name": "TEST",
       "brand": "Apple",
-      "category": "Computers",
-      "price": 599,
-      "description": "Petit mais puissant cette machine vous permettra de travailler comme un PRO",
-      "createdAt": "2025-06-27T08:30:07.613Z",
-      "imageFilename": "1751013007608_1750318890043_1750316689880_2025-06-28-soireIIÌÂAÌÂe-jeux-video-web.jpg",
-      "id": 1
+      "category": "Location de vaisselle",
+      "price": 20,
+      "description": "fgfoejzg gejgehg ",
+      "createdAt": "2025-07-02T11:42:30.988Z",
+      "imageFilename": "1751456550987_DC.svg",
+      "id": 3
     }
   ]
 }
