@@ -4,6 +4,7 @@ const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret123";
@@ -34,6 +35,26 @@ const readDb = () => JSON.parse(fs.readFileSync("db.json", "utf-8"));
 const writeDb = (data) =>
   fs.writeFileSync("db.json", JSON.stringify(data, null, 2));
 
+// Vérifie et met à jour les utilisateurs (hash + rôle) au démarrage
+function ensureUsersSecure() {
+  const db = readDb();
+  let modified = false;
+  db.user.forEach((u) => {
+    // Ajout rôle
+    if (!u.role) {
+      u.role = u.id === "admin" ? "admin" : "user";
+      modified = true;
+    }
+    // Hachage si pas déjà fait (bcrypt hash commence par "$2")
+    if (!u.password.startsWith("$2")) {
+      u.password = bcrypt.hashSync(u.password, 10);
+      modified = true;
+    }
+  });
+  if (modified) writeDb(db);
+}
+ensureUsersSecure();
+
 // Middleware Body Parser (json-server)
 server.use(jsonServer.bodyParser);
 
@@ -53,13 +74,18 @@ server.options("*", cors());
 
 // LOGIN (avec génération JWT)
 server.post("/login", (req, res) => {
-  const { id, password } = req.body;
-    const db = readDb();
-    const user = db.user.find((u) => u.id === id && u.password === password);
+    const { id, password } = req.body;
+  const db = readDb();
+  const user = db.user.find((u) => u.id === id);
 
-    if (!user) return res.status(401).json({ message: "Identifiants invalides" });
+  if (!user) return res.status(401).json({ message: "Identifiants invalides" });
 
-  const payload = { id: user.id, role: user.id === "admin" ? "admin" : "user" };
+  // Vérifie le mot de passe avec bcrypt
+  const ok = bcrypt.compareSync(password, user.password);
+  if (!ok)
+    return res.status(401).json({ message: "Identifiants invalides" });
+
+  const payload = { id: user.id, role: user.role };
   const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: "1h" });
   const refreshToken = crypto.randomUUID();
   refreshTokens.push({ token: refreshToken, userId: user.id });
@@ -74,7 +100,9 @@ server.post("/refresh", (req, res) => {
   const entry = refreshTokens.find((t) => t.token === refreshToken);
   if (!entry) return res.status(401).json({ message: "Refresh token invalide" });
 
-  const payload = { id: entry.userId, role: entry.userId === "admin" ? "admin" : "user" };
+    const dbRef = readDb();
+  const user = dbRef.user.find((u) => u.id === entry.userId);
+  const payload = { id: entry.userId, role: user ? user.role : "user" };
   const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: "1h" });
   return res.json({ accessToken, expiresIn: 3600 });
 });
