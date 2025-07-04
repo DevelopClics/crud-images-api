@@ -3,6 +3,11 @@ const multer = require("multer");
 const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
+const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+
+const JWT_SECRET = process.env.JWT_SECRET || "supersecret123";
+const refreshTokens = [];
 
 const server = jsonServer.create();
 const router = jsonServer.router("db.json");
@@ -41,28 +46,47 @@ server.use(
       return callback(new Error("CORS origin not allowed"), false);
     },
     credentials: true,
-    allowedHeaders: ["Content-Type", "X-User-Id"], // <-- Ajouté pour autoriser ce header custom
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 server.options("*", cors());
 
-// LOGIN
+// LOGIN (avec génération JWT)
 server.post("/login", (req, res) => {
   const { id, password } = req.body;
-  const db = readDb();
-  const user = db.user.find((u) => u.id === id && u.password === password);
+    const db = readDb();
+    const user = db.user.find((u) => u.id === id && u.password === password);
 
-  if (user) {
-    currentUser = { id: user.id, name: user.name };
-    res.json({ message: "Connecté", user: currentUser });
-  } else {
-    res.status(401).json({ message: "Identifiants invalides" });
-  }
+    if (!user) return res.status(401).json({ message: "Identifiants invalides" });
+
+  const payload = { id: user.id, role: user.id === "admin" ? "admin" : "user" };
+  const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: "1h" });
+  const refreshToken = crypto.randomUUID();
+  refreshTokens.push({ token: refreshToken, userId: user.id });
+
+  return res.json({ user: { id: user.id, name: user.name }, accessToken, refreshToken, expiresIn: 3600 });
+    
+});
+
+// REFRESH token
+server.post("/refresh", (req, res) => {
+  const { refreshToken } = req.body;
+  const entry = refreshTokens.find((t) => t.token === refreshToken);
+  if (!entry) return res.status(401).json({ message: "Refresh token invalide" });
+
+  const payload = { id: entry.userId, role: entry.userId === "admin" ? "admin" : "user" };
+  const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: "1h" });
+  return res.json({ accessToken, expiresIn: 3600 });
 });
 
 // LOGOUT
 server.post("/logout", (req, res) => {
-  currentUser = null;
+    // Optionnel : retirer refreshToken de la liste
+  const { refreshToken } = req.body || {};
+  if (refreshToken) {
+    const idx = refreshTokens.findIndex((t) => t.token === refreshToken);
+    if (idx !== -1) refreshTokens.splice(idx, 1);
+  }
   res.json({ message: "Déconnecté" });
 });
 
@@ -107,19 +131,28 @@ function validateProduct(body) {
   return errors;
 }
 
-// Middleware pour routes admin : check si admin connecté
-const checkAdmin = (req, res, next) => {
-  const userId = req.get("X-User-Id")?.trim();
-  console.log("checkAdmin - userId header:", userId);
+// Middleware JWT
+function authenticate(req, res, next) {
+  const auth = req.get("Authorization") || "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
+  if (!token) return res.status(401).json({ message: "Token manquant" });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ message: "Token invalide" });
+  }
+}
 
-  if (userId !== "admin") {
+function checkAdmin(req, res, next) {
+    if (req.user?.role !== "admin") {
     return res.status(403).json({ message: "Accès refusé - admin uniquement" });
   }
-  console.log("Accès autorisé - admin confirmé");
   next();
 };
 // Middleware création produit admin
-server.post("/admin/products", checkAdmin, bodyParser, (req, res, next) => {
+server.post("/admin/products", authenticate, checkAdmin, bodyParser, (req, res, next) => {
   req.body.createdAt = new Date().toISOString();
 
   if (req.files?.image?.[0]) {
@@ -139,6 +172,7 @@ server.post("/admin/products", checkAdmin, bodyParser, (req, res, next) => {
 // Middleware modification produit admin
 server.patch(
   "/admin/products/:id",
+  authenticate,
   checkAdmin,
   bodyParser,
   (req, res, next) => {
@@ -164,7 +198,7 @@ server.patch(
 //   next();
 // });
 
-server.delete("/admin/products/:id", checkAdmin, (req, res) => {
+server.delete("/admin/products/:id", authenticate, checkAdmin, (req, res) => {
   const id = Number(req.params.id);
   const db = router.db; // accès low-level à la db json-server
 
