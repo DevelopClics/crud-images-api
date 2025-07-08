@@ -109,13 +109,14 @@ server.post("/refresh", (req, res) => {
 
 // LOGOUT
 server.post("/logout", (req, res) => {
-    // Optionnel : retirer refreshToken de la liste
-  const { refreshToken } = req.body || {};
+  const { refreshToken } = req.body;
   if (refreshToken) {
-    const idx = refreshTokens.findIndex((t) => t.token === refreshToken);
-    if (idx !== -1) refreshTokens.splice(idx, 1);
+    const index = refreshTokens.findIndex((t) => t.token === refreshToken);
+    if (index !== -1) {
+      refreshTokens.splice(index, 1);
+    }
   }
-  res.json({ message: "Déconnecté" });
+  res.status(200).json({ message: "Déconnecté avec succès" });
 });
 
 // Middleware json-server avec options (static: public, noCors: true car CORS géré avant)
