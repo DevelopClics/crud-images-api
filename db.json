@@ -6,26 +6,5 @@
       "password": "12345Abc"
     }
   ],
-  "products": [
-    {
-      "name": "La violette",
-      "brand": "DEDC",
-      "category": "Guinguette Mobile",
-      "price": 1,
-      "description": "La Guinguette mobile et ludique etc.",
-      "createdAt": "2025-07-02T11:38:40.354Z",
-      "imageFilename": "1751456320345_logo-guinguette-mobile.png",
-      "id": 2
-    },
-    {
-      "name": "TEST",
-      "brand": "Apple",
-      "category": "Location de vaisselle",
-      "price": 20,
-      "description": "fgfoejzg gejgehg ",
-      "createdAt": "2025-07-02T11:42:30.988Z",
-      "imageFilename": "1751456550987_DC.svg",
-      "id": 3
-    }
-  ]
-}
+  "products": []
+}l
